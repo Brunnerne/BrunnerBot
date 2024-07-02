@@ -194,6 +194,7 @@ async def done(interaction: discord.Interaction, contributors: Optional[str]):
     users = chall_db.solvers
     if interaction.user.id not in users:
         users.append(interaction.user.id)
+
     if contributors is not None:
         for user in [int(i) for i in re.findall(r'<@!?(\d+)>', contributors)]:
             if user not in users:
@@ -205,8 +206,21 @@ async def done(interaction: discord.Interaction, contributors: Optional[str]):
 
     await move_channel(interaction.channel, get_complete_category(interaction.guild))
 
-    msg = ":tada: {} was solved by ".format(interaction.channel.mention) + " ".join(f"<@!{user}>" for user in users) + " !"
-    await interaction.guild.get_channel(ctf_db.channel_id).send(msg)
+    # Easter egg, use special emojis for firehawk
+    msg_emoji = ":tada:"
+    reaction_emoji = "peepoBrunner"
+    if len(users) == 1 and users[0] == 286173785336446978:
+        msg_emoji = ":fire:"
+        reaction_emoji = "firepog"
+
+    solvers = " ".join(f"<@!{user}>" for user in users)
+    msg = f"{msg_emoji}  {interaction.channel.mention} was solved by {solvers}!  {msg_emoji}"
+    sent_msg = await interaction.guild.get_channel(ctf_db.channel_id).send(msg)
+
+    # Pre-react to solver message
+    emoji = discord.utils.get(interaction.guild.emojis, name=reaction_emoji)
+    await sent_msg.add_reaction(emoji)
+
     await interaction.response.send_message("Challenge moved to done!")
 
 
