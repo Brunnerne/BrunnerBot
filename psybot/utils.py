@@ -102,7 +102,7 @@ async def is_team_admin(interaction: discord.Interaction) -> bool:
 _channel_name_translation = {ord(i): '' for i in '''!"#$%&'()*+,./:;<=>?@[\\]^`{|}~'''}
 _channel_name_translation |= {ord(' '): '_', ord('-'): '_'}
 def sanitize_channel_name(name: str) -> str:
-    name = re.sub(r"<:.+?:\d+?>", "", name)  # Remove emojis
+    name = re.sub(r"<a?:.+?:\d+?>", "", name)  # Remove emojis
     name = name.translate(_channel_name_translation).lower()
     return re.sub(r"_+", "_", name).strip("_")
 
