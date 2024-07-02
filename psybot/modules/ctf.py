@@ -8,7 +8,6 @@ import discord
 from discord import app_commands
 from discord import ui
 
-from psybot.models.ctf_category import CtfCategory
 from psybot.utils import *
 from psybot.modules.ctftime import Ctftime
 from psybot.config import config
@@ -293,7 +292,7 @@ class CtfCommands(app_commands.Group):
                 chall.delete()
         await interaction.edit_original_response(content="The CTF has been renamed")
 
-    @app_commands.command(description="Export an archived CTF")
+    @app_commands.command(description="Export a CTF")
     @app_commands.guild_only
     @app_commands.check(is_team_admin)
     async def export(self, interaction: discord.Interaction):
