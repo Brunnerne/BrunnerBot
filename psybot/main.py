@@ -5,7 +5,7 @@ import discord
 import pymongo.errors
 from discord import app_commands
 
-from psybot.modules import ctf, ctftime, challenge, notes, psybot
+from psybot.modules import ctf, ctftime, challenge, notes, bot
 from psybot.config import config
 from psybot.database import db
 from psybot.utils import setup_settings
@@ -22,7 +22,7 @@ challenge.add_commands(tree, guild_obj)
 ctf.add_commands(tree, guild_obj)
 ctftime.add_commands(tree, guild_obj)
 notes.add_commands(tree, guild_obj)
-psybot.add_commands(tree, guild_obj)
+bot.add_commands(tree, guild_obj)
 
 
 @client.event

@@ -206,12 +206,18 @@ async def done(interaction: discord.Interaction, contributors: Optional[str]):
 
     await move_channel(interaction.channel, get_complete_category(interaction.guild))
 
-    # Easter egg, use special emojis for firehawk
+    # Special emojis for certain users, otherwise default
+    emojis = {
+        286173785336446978: (":fire:", "firepog"),  # firehawk
+        112158630161158144: (":punch:", "noshell"),  # N1z0ku
+        145301884662448128: (":flag_no:", "chadtor"),  # Victor4X
+        634877910511255575: (":lemon: :last_quarter_moon_with_face:", "lightsaberpepe"),  # Anakin
+    }
     msg_emoji = ":tada:"
     reaction_emoji = "peepoBrunner"
-    if len(users) == 1 and users[0] == 286173785336446978:
-        msg_emoji = ":fire:"
-        reaction_emoji = "firepog"
+
+    if len(users) == 1 and users[0] in emojis:
+        msg_emoji, reaction_emoji = emojis[users[0]]
 
     solvers = " ".join(f"<@!{user}>" for user in users)
     msg = f"{msg_emoji}  {interaction.channel.mention} was solved by {solvers}!  {msg_emoji}"

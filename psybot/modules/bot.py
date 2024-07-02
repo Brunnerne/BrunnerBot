@@ -42,7 +42,7 @@ SETTINGS_TYPES = {
     'ctftime_team': str,
 }
 
-class PsybotCommands(app_commands.Group):
+class BotCommands(app_commands.Group):
     @app_commands.command(description="Update guild settings")
     @app_commands.guild_only
     @app_commands.choices(key=[app_commands.Choice(name=name, value=name) for name in SETTINGS_TYPES.keys()])
@@ -109,4 +109,4 @@ class PsybotCommands(app_commands.Group):
 
 
 def add_commands(tree: app_commands.CommandTree, guild: Optional[discord.Object]):
-    tree.add_command(PsybotCommands(name="psybot"), guild=guild)
+    tree.add_command(BotCommands(name="bot"), guild=guild)
