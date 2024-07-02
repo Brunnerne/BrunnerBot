@@ -1,3 +1,5 @@
+import re
+
 import discord
 from discord import app_commands
 
@@ -8,7 +10,7 @@ MAX_CHANNELS = 500
 CATEGORY_MAX_CHANNELS = 50
 
 
-def get_category_pos(category_channel: discord.CategoryChannel, name: str):
+def get_category_pos(category_channel: discord.CategoryChannel, name: str) -> int:
     if name.count("-") == 1:
         ctf, category = name.split("-")[0], None
     else:
@@ -35,7 +37,7 @@ def get_category_pos(category_channel: discord.CategoryChannel, name: str):
         return 0
 
 
-async def get_backup_category(original_category: discord.CategoryChannel):
+async def get_backup_category(original_category: discord.CategoryChannel) -> discord.CategoryChannel:
     last_backup = None
     for cat in BackupCategory.objects(original_id=original_category.id).order_by('index'):
         last_backup = cat
@@ -63,7 +65,7 @@ async def delete_channel(channel: discord.TextChannel):
     await free_backup_category(original_category)
 
 
-async def create_channel(name: str, overwrites: dict, category: discord.CategoryChannel, challenge=True):
+async def create_channel(name: str, overwrites: dict, category: discord.CategoryChannel, challenge=True) -> discord.TextChannel:
     if len(category.channels) == CATEGORY_MAX_CHANNELS:
         category = await get_backup_category(category)
 
@@ -98,25 +100,28 @@ async def is_team_admin(interaction: discord.Interaction) -> bool:
 
 
 _channel_name_translation = {ord(i): '' for i in '''!"#$%&'()*+,./:;<=>?@[\\]^`{|}~'''}
-_channel_name_translation[ord(' ')] = '_'
-_channel_name_translation[ord('-')] = '_'
+_channel_name_translation |= {ord(' '): '_', ord('-'): '_'}
 def sanitize_channel_name(name: str) -> str:
-    return name.translate(_channel_name_translation).lower()
+    name = re.sub(r"<:.+?:\d+?>", "", name)  # Remove emojis
+    name = name.translate(_channel_name_translation).lower()
+    return re.sub(r"_+", "_", name).strip("_")
 
 
-def _discord_get(guild: discord.Guild, value: int, id_type: str):
+def _discord_get(guild: discord.Guild, value: int, id_type: str) -> discord.Role | discord.abc.GuildChannel | None:
     if id_type == "role":
         return guild.get_role(value)
     elif id_type == "channel" or id_type == "category":
         return guild.get_channel(value)
 
-def _discord_find(guild: discord.Guild, name: str, id_type: str):
+
+def _discord_find(guild: discord.Guild, name: str, id_type: str) -> discord.Role | discord.abc.GuildChannel | None:
     if id_type == "role":
         return discord.utils.get(guild.roles, name=name)
     elif id_type == "channel":
         return discord.utils.get(guild.channels, name=name)
     elif id_type == "category":
         return discord.utils.get(guild.categories, name=name)
+
 
 def _discord_create(guild: discord.Guild, name: str, id_type: str):
     if id_type == "role":
@@ -125,6 +130,7 @@ def _discord_create(guild: discord.Guild, name: str, id_type: str):
         return guild.create_text_channel(name=name)
     elif id_type == "category":
         return guild.create_category_channel(name=name)
+
 
 async def setup_settings(guild: discord.Guild):
     settings = GuildSettings.objects(guild_id=guild.id).first()
@@ -157,6 +163,7 @@ async def setup_settings(guild: discord.Guild):
     for member in guild.members:
         if member.guild_permissions.administrator and member != guild.me:
             await member.add_roles(guild.get_role(settings.admin_role), guild.get_role(settings.team_role))
+
 
 def get_settings(guild: discord.Guild) -> GuildSettings:
     if guild is None:
@@ -198,6 +205,7 @@ def _get_category(guild: discord.Guild, category_name: str) -> discord.CategoryC
     if category is None:
         raise app_commands.AppCommandError("'{0}' category missing. Fix this with /psybot set {0} <category_id>".format(category_name))
     return category
+
 
 get_ctfs_category = lambda g: _get_category(g, 'ctfs_category')
 get_incomplete_category = lambda g: _get_category(g, 'incomplete_category')
