@@ -148,7 +148,38 @@ class CtfCommands(app_commands.Group):
             raise app_commands.AppCommandError("There are too many channels on this discord server")
         name = sanitize_channel_name(name)
 
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
+
+        if existing_ctf := Ctf.objects(name=name).first():
+            if interaction.guild.get_channel(existing_ctf.channel_id):
+                await interaction.edit_original_response(
+                    content="A CTF with that name already exists"
+                )
+                return
+
+            # If found in DB but channel no longer exists, it's been deleted through Discord
+            # Remove all challenges that have no corresponding channel
+            for chall in Challenge.objects(ctf=existing_ctf):
+                if not interaction.guild.get_channel(chall.channel_id):
+                    chall.delete()
+
+            # Check if any channels remain
+            if Challenge.objects(ctf=existing_ctf).first() is not None:
+                await interaction.edit_original_response(
+                    content="Challenges from a CTF with that name still exist!\n"
+                    "Please inspect all remains and force delete before retrying:\n"
+                    f"`/ctf delete security:{name} force:True`"
+                )
+                return
+
+            # Else delete the CTF and corresponding role
+            try:
+                await interaction.guild.get_role(existing_ctf.role_id).delete(
+                    reason="Deleted CTF channels"
+                )
+            except AttributeError:
+                pass
+            existing_ctf.delete()
 
         settings = get_settings(interaction.guild)
 
@@ -188,7 +219,8 @@ class CtfCommands(app_commands.Group):
         )
         ctf_db.save()
 
-        await interaction.edit_original_response(content=f"Created ctf {new_channel.mention}")
+        await interaction.delete_original_response()
+        await interaction.channel.send(f"Created CTF {new_channel.mention}")
 
         if not private and not settings.use_team_role_as_acl:
             for member in get_team_role(interaction.guild).members:
@@ -255,7 +287,10 @@ class CtfCommands(app_commands.Group):
                 raise app_commands.AppCommandError("Invalid URL")
             info["url"] = value
         elif field == "discord":
-            regex_discord = re.search(r"^(?:https?://)?discord\.\w{2,3}/(?:invite/)?(\w+)/?$", value)
+            regex_discord = re.search(
+                r"^(?:https?://)?discord\.\w{2,3}/(?:invite/)?(\w+)/?$",
+                value
+            )
             if not regex_discord:
                 raise app_commands.AppCommandError("Invalid Discord URL")
 
@@ -439,13 +474,17 @@ class CtfCommands(app_commands.Group):
             pass
 
         ctf_channel = interaction.guild.get_channel(ctf_db.channel_id)
-        await delete_channel(ctf_channel)
+        try:
+            await delete_channel(ctf_channel)
+        except AttributeError:
+            pass
+
         Challenge.objects(ctf=ctf_db).delete()
         ctf_db.delete()
 
         if interaction.channel != ctf_channel:
             await interaction.edit_original_response(
-                content=f"CTF **{security}** deleted successfully"
+                content="CTF deleted successfully"
             )
 
 
