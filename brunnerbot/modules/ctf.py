@@ -111,17 +111,17 @@ async def export_channels(channels: list[discord.TextChannel]):
 
 
 def create_info_message(info):
-    msg = discord.utils.escape_mentions(info["title"])
+    msg = f"## {discord.utils.escape_mentions(info['title'])}"
     if "start" in info or "end" in info:
         msg += "\n"
     if "start" in info:
-        msg += f"\n**START** <t:{info['start']}:R> <t:{info['start']}>"
+        msg += f"\n**START:** <t:{info['start']}:R> <t:{info['start']}>"
     if "end" in info:
-        msg += f"\n**END** <t:{info['end']}:R> <t:{info['end']}>"
+        msg += f"\n**END:** <t:{info['end']}:R> <t:{info['end']}>"
     if "url" in info:
-        msg += f"\n\n{info['url']}"
+        msg += f"\n\nCTF Link: {info['url']}"
     if "creds" in info:
-        msg += "\n\n**CREDENTIALS**\n" + discord.utils.escape_mentions(info["creds"])
+        msg += f"\n\n### CREDENTIALS\n\n{discord.utils.escape_mentions(info['creds'])}"
     return msg
 
 
