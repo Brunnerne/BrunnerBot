@@ -157,18 +157,19 @@ async def add(interaction: discord.Interaction, category: str, name: str):
         name_field = ui.TextInput(
             label="Name",
             default=name,
-            placeholder="Challenge name"
+            placeholder="Challenge name",
         )
         category_field = ui.TextInput(
             label="Category",
             default=category,
-            placeholder="Challenge category"
+            placeholder="Challenge category",
+            required=False,
         )
         description_field = ui.TextInput(
             label="Description",
             style=discord.TextStyle.paragraph,
             placeholder="Challenge description",
-            max_length=1000
+            max_length=1000,
         )
 
         async def on_submit(self, submit_interaction: discord.Interaction):
