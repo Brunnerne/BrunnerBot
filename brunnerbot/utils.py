@@ -41,13 +41,13 @@ async def get_backup_category(
         original_category: discord.CategoryChannel
     ) -> discord.CategoryChannel:
     last_backup = None
-    for cat in BackupCategory.objects(original_id=original_category.id).order_by('index'):
+    for cat in BackupCategory.objects(original_id=original_category.id).order_by("index"):
         last_backup = cat
-        category = original_category.guild.get_channel(cat['category_id'])
+        category = original_category.guild.get_channel(cat["category_id"])
         if len(category.channels) < CATEGORY_MAX_CHANNELS:
             return category
 
-    idx = 2 if not last_backup else last_backup['index']+1
+    idx = 2 if not last_backup else last_backup["index"]+1
     new_category = await original_category.guild.create_category(
         f"{original_category.name} {idx}", position=original_category.position
     )
@@ -118,8 +118,8 @@ async def is_team_admin(interaction: discord.Interaction) -> bool:
     return True
 
 
-_channel_name_translation = {ord(i): '' for i in '''!"#$%&'()*+,./:;<=>?@[\\]^`{|}~'''}
-_channel_name_translation |= {ord(' '): '_', ord('-'): '_'}
+_channel_name_translation = {ord(i): "" for i in """!"#$%&'()*+,./:;<=>?@[\\]^`{|}~"""}
+_channel_name_translation |= {ord(" "): "_", ord("-"): "_"}
 def sanitize_channel_name(name: str) -> str:
     name = re.sub(r"<a?:.+?:\d+?>", "", name)  # Remove emojis
     name = name.translate(_channel_name_translation).lower()
@@ -254,7 +254,7 @@ def _get_category(guild: discord.Guild, category_name: str) -> discord.CategoryC
     category = guild.get_channel(getattr(settings, category_name))
     if category is None:
         raise app_commands.AppCommandError(
-            f"'{category_name}' category missing. "
+            f"\"{category_name}\" category missing. "
             f"Fix this with /bot set {category_name} <category_id>"
         )
     return category

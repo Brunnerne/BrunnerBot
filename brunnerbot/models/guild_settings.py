@@ -17,10 +17,10 @@ class GuildSettings(Document):
     hedgedoc_url = StringField(required=True, max_length=100, default="https://demo.hedgedoc.org")
     ctftime_team = StringField(max_length=50)
     meta = {
-        'indexes': [
+        "indexes": [
             {
-                'fields': ['guild_id'],
-                'unique': True
+                "fields": ["guild_id"],
+                "unique": True
             }
         ]
     }

@@ -6,11 +6,11 @@ class BackupCategory(Document):
     original_id = LongField(required=True)
     category_id = LongField(required=True)
     meta = {
-        'indexes': [
+        "indexes": [
             {
-                'fields': ['category_id'],
-                'unique': True
+                "fields": ["category_id"],
+                "unique": True
             },
-            'original_id'
+            "original_id"
         ]
     }

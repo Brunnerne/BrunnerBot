@@ -27,10 +27,10 @@ class Challenge(Document):
     working = EmbeddedDocumentListField(Working)
     solved = BooleanField(required=True, default=False)
     meta = {
-        'indexes': [
+        "indexes": [
             {
-                'fields': ['channel_id'],
-                'unique': True
+                "fields": ["channel_id"],
+                "unique": True
             }
         ]
     }

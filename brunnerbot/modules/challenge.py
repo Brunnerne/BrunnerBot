@@ -47,7 +47,7 @@ async def category_autocomplete(
     query = CtfCategory.objects(
         name=re.compile("^" + re.escape(current)),
         guild_id=interaction.guild_id
-    ).order_by('-count')[:25]
+    ).order_by("-count")[:25]
     return [app_commands.Choice(name=c["name"], value=c["name"]) for c in query]
 
 
@@ -57,7 +57,7 @@ async def category_autocomplete_nullable(
 ) -> list[app_commands.Choice[str]]:
     out = await category_autocomplete(interaction, current)
     if len(out) < 25 and "none".startswith(current):
-        out.append(app_commands.Choice(name='None', value=''))
+        out.append(app_commands.Choice(name="None", value=""))
     return out
 
 
@@ -120,7 +120,7 @@ class WorkView(ui.View):
         label="Set Working",
         emoji="🛠️",
         style=discord.ButtonStyle.success,
-        custom_id='work_view:set_working'
+        custom_id="work_view:set_working"
     )
     async def set_working(self, interaction: discord.Interaction, _button: ui.Button):
         chall_db, ctf_db = await check_challenge(interaction)
@@ -251,7 +251,7 @@ async def done(interaction: discord.Interaction, contributors: str | None):
         users.append(interaction.user.id)
 
     if contributors is not None:
-        for user in [int(i) for i in re.findall(r'<@!?(\d+)>', contributors)]:
+        for user in [int(i) for i in re.findall(r"<@!?(\d+)>", contributors)]:
             if user not in users:
                 users.append(user)
 
@@ -342,7 +342,7 @@ class WorkValue:
         self.name = name
 
     def hex_color(self):
-        return f'#{self.color:06x}'
+        return f"#{self.color:06x}"
 
     def __str__(self):
         return self.name
@@ -366,10 +366,10 @@ def export_table(solves: dict[discord.Member, list[int]], challs: list[str], fil
             height * CELL_HEIGHT
         )
     )
-    ax.axis('off')
+    ax.axis("off")
     tbl = Table(ax, loc="center")
 
-    def add_cell(r, c, text=None, color='w', loc='center', edges='closed'):
+    def add_cell(r, c, text=None, color="w", loc="center", edges="closed"):
         tbl[r, c] = Cell(
             (r, c),
             text=text,
@@ -382,20 +382,20 @@ def export_table(solves: dict[discord.Member, list[int]], challs: list[str], fil
         )
 
     for row, name in enumerate(challs):
-        add_cell(row + 1, 0, text=name, loc='left')
+        add_cell(row + 1, 0, text=name, loc="left")
 
     for col, user in enumerate(solves.keys()):
-        nm = user.nick if hasattr(user, 'nick') and user.nick else user.name
-        add_cell(0, col + 1, text=nm if has_names else None, edges='B', color='black')
+        nm = user.nick if hasattr(user, "nick") and user.nick else user.name
+        add_cell(0, col + 1, text=nm if has_names else None, edges="B", color="black")
         if has_names:
             tbl[0, col + 1].auto_set_font_size(fig.canvas.get_renderer())
         for row, val in enumerate(solves[user]):
-            color = WORK_VALUES[val].hex_color() if 0 <= val < len(WORK_VALUES) else 'w'
+            color = WORK_VALUES[val].hex_color() if 0 <= val < len(WORK_VALUES) else "w"
             add_cell(row + 1, col + 1, color=color)
     tbl.auto_set_column_width(0)
     tbl.auto_set_font_size(False)
     ax.add_table(tbl)
-    plt.savefig(filename, bbox_inches='tight', pad_inches=0)
+    plt.savefig(filename, bbox_inches="tight", pad_inches=0)
 
 
 @app_commands.command(description="Shortcut to set working status on the challenge")
@@ -445,7 +445,7 @@ class WorkingCommands(app_commands.Group):
             challs = Challenge.objects(ctf=ctf_db)
         else:
             challs = Challenge.objects(ctf=ctf_db, solved=False)
-        sorted_challs = sorted(challs, key=lambda x: (x.category or '', x.name))
+        sorted_challs = sorted(challs, key=lambda x: (x.category or "", x.name))
 
         # Filter out deleted challs
         challs = []
@@ -475,7 +475,7 @@ class WorkingCommands(app_commands.Group):
             export_table(
                 tbl,
                 [
-                    (chall.category + "-" if chall.category else '') + chall.name
+                    (chall.category + "-" if chall.category else "") + chall.name
                     for chall in challs
                 ],
                 filename

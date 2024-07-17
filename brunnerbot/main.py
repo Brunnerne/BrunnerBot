@@ -89,5 +89,5 @@ async def main():
         await client.start(config.bot_token)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(main())

@@ -6,10 +6,10 @@ class CtfCategory(Document):
     count = IntField(required=True)
     guild_id = LongField(required=True)
     meta = {
-        'indexes': [
+        "indexes": [
             {
-                'fields': ['name', 'guild_id'],
-                'unique': True
+                "fields": ["name", "guild_id"],
+                "unique": True
             }
         ]
     }

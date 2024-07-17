@@ -22,13 +22,13 @@ class ModalNoteView(ui.View):
         label="Edit",
         emoji="📝",
         style=discord.ButtonStyle.secondary,
-        custom_id='modal_note:edit_note'
+        custom_id="modal_note:edit_note"
     )
     async def edit_note(self, interaction: discord.Interaction, _button: ui.Button):
         original = interaction.message.embeds[0].description
 
-        class EditNoteModal(ui.Modal, title='Edit Note'):
-            edit = ui.TextInput(label='Edit', style=discord.TextStyle.paragraph, default=original)
+        class EditNoteModal(ui.Modal, title="Edit Note"):
+            edit = ui.TextInput(label="Edit", style=discord.TextStyle.paragraph, default=original)
 
             async def on_submit(self, submit_interaction: discord.Interaction):
                 dmp = diff_match_patch()
@@ -53,7 +53,7 @@ class ModalNoteView(ui.View):
         label="Pin/Unpin",
         emoji="📌",
         style=discord.ButtonStyle.secondary,
-        custom_id='modal_note:toggle_pin'
+        custom_id="modal_note:toggle_pin"
     )
     async def toggle_pin(self, interaction: discord.Interaction, _button: ui.Button):
         if interaction.message.pinned:
@@ -66,7 +66,7 @@ class ModalNoteView(ui.View):
         label="Move Down",
         emoji="⏬",
         style=discord.ButtonStyle.secondary,
-        custom_id='modal_note:move_down'
+        custom_id="modal_note:move_down"
     )
     async def move_down(self, interaction: discord.Interaction, _button: ui.Button):
         is_pinned = interaction.message.pinned
@@ -98,7 +98,7 @@ class HedgeDocNoteView(ui.View):
         label="Update",
         emoji="⌛",
         style=discord.ButtonStyle.secondary,
-        custom_id='hedgedoc_note:update'
+        custom_id="hedgedoc_note:update"
     )
     async def update(self, interaction: discord.Interaction, _button: ui.Button):
         await interaction.response.defer()
@@ -123,7 +123,7 @@ class HedgeDocNoteView(ui.View):
         label="Pin/Unpin",
         emoji="📌",
         style=discord.ButtonStyle.secondary,
-        custom_id='hedgedoc_note:toggle_pin'
+        custom_id="hedgedoc_note:toggle_pin"
     )
     async def toggle_pin(self, interaction: discord.Interaction, _button: ui.Button):
         if interaction.message.pinned:
@@ -136,7 +136,7 @@ class HedgeDocNoteView(ui.View):
         label="Move Down",
         emoji="⏬",
         style=discord.ButtonStyle.secondary,
-        custom_id='hedgedoc_note:move_down'
+        custom_id="hedgedoc_note:move_down"
     )
     async def move_down(self, interaction: discord.Interaction, _button: ui.Button):
         is_pinned = interaction.message.pinned

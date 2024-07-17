@@ -111,17 +111,17 @@ async def export_channels(channels: list[discord.TextChannel]):
 
 
 def create_info_message(info):
-    msg = discord.utils.escape_mentions(info['title'])
-    if 'start' in info or 'end' in info:
+    msg = discord.utils.escape_mentions(info["title"])
+    if "start" in info or "end" in info:
         msg += "\n"
-    if 'start' in info:
+    if "start" in info:
         msg += f"\n**START** <t:{info['start']}:R> <t:{info['start']}>"
-    if 'end' in info:
+    if "end" in info:
         msg += f"\n**END** <t:{info['end']}:R> <t:{info['end']}>"
-    if 'url' in info:
+    if "url" in info:
         msg += f"\n\n{info['url']}"
-    if 'creds' in info:
-        msg += "\n\n**CREDENTIALS**\n" + discord.utils.escape_mentions(info['creds'])
+    if "creds" in info:
+        msg += "\n\n**CREDENTIALS**\n" + discord.utils.escape_mentions(info["creds"])
     return msg
 
 
@@ -158,12 +158,12 @@ class CtfCommands(app_commands.Group):
         ctf_category = get_ctfs_category(interaction.guild)
         new_channel = await create_channel(name, overwrites, ctf_category, challenge=False)
 
-        info = {'title': name}
+        info = {"title": name}
         if ctftime:
-            regex_ctftime = re.search(r'^(?:https?://ctftime.org/event/)?(\d+)/?$', ctftime)
+            regex_ctftime = re.search(r"^(?:https?://ctftime.org/event/)?(\d+)/?$", ctftime)
             if regex_ctftime:
-                info['ctftime_id'] = int(regex_ctftime.group(1))
-                ctf_info = await Ctftime.get_ctf_info(info['ctftime_id'])
+                info["ctftime_id"] = int(regex_ctftime.group(1))
+                ctf_info = await Ctftime.get_ctf_info(info["ctftime_id"])
                 info |= ctf_info
 
         info_msg = await new_channel.send(create_info_message(info))
@@ -213,7 +213,7 @@ class CtfCommands(app_commands.Group):
                     t = int(parser.parse(value).timestamp())
                 except parser.ParserError as exc:
                     raise app_commands.AppCommandError(
-                        'Invalid time, please use any standard time format'
+                        "Invalid time, please use any standard time format"
                     ) from exc
 
             info[field] = t
@@ -222,9 +222,9 @@ class CtfCommands(app_commands.Group):
             username, password = c[0], c[1] if len(c) > 1 else "password"
             original = f"Name: `{username}`\nPassword: `{password}`"
 
-            class CredsModal(ui.Modal, title='Edit Credentials'):
+            class CredsModal(ui.Modal, title="Edit Credentials"):
                 edit = ui.TextInput(
-                    label='Edit',
+                    label="Edit",
                     style=discord.TextStyle.paragraph,
                     default=original,
                     max_length=1000
@@ -242,16 +242,16 @@ class CtfCommands(app_commands.Group):
             await interaction.response.send_modal(CredsModal())
             return
         elif field == "url":
-            if not re.search(r'^https?://', value):
+            if not re.search(r"^https?://", value):
                 raise app_commands.AppCommandError("Invalid url")
             info["url"] = value
         elif field == "ctftime":
-            regex_ctftime = re.search(r'^(?:https?://ctftime.org/event/)?(\d+)/?$', value)
+            regex_ctftime = re.search(r"^(?:https?://ctftime.org/event/)?(\d+)/?$", value)
             if not regex_ctftime:
                 raise app_commands.AppCommandError("Invalid ctftime link")
 
-            info['ctftime_id'] = int(regex_ctftime.group(1))
-            ctf_info = await Ctftime.get_ctf_info(info['ctftime_id'])
+            info["ctftime_id"] = int(regex_ctftime.group(1))
+            ctf_info = await Ctftime.get_ctf_info(info["ctftime_id"])
             for key, val in ctf_info.items():
                 info[key] = val
         else:
@@ -329,8 +329,8 @@ class CtfCommands(app_commands.Group):
 
         name = sanitize_channel_name(name)
 
-        if ctf_db.info.get('title') == ctf_db.name:
-            ctf_db.info['title'] = name
+        if ctf_db.info.get("title") == ctf_db.name:
+            ctf_db.info["title"] = name
         ctf_db.name = name
         ctf_db.save()
 
@@ -372,7 +372,7 @@ class CtfCommands(app_commands.Group):
 
         filepath = export_dir / f"{interaction.channel_id}_{ctf_db.name}.json"
         try:
-            with open(filepath, 'w', encoding="utf8") as f:
+            with open(filepath, "w", encoding="utf8") as f:
                 f.write(json.dumps(ctf_export, separators=(",", ":")))
         except FileNotFoundError:
             # Export dir was not created

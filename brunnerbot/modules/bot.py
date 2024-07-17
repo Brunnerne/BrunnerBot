@@ -25,19 +25,19 @@ async def check_channel(guild: discord.Guild, value: str):
     return isinstance(channel, discord.TextChannel)
 
 SETTINGS_TYPES = {
-    'team_role': discord.Role,
-    'admin_role': discord.Role,
-    'ctfs_category': discord.CategoryChannel,
-    'incomplete_category': discord.CategoryChannel,
-    'complete_category': discord.CategoryChannel,
-    'archive_category': discord.CategoryChannel,
-    'ctf_archive_category': discord.CategoryChannel,
-    'export_channel': discord.TextChannel,
-    'enforce_categories': bool,
-    'send_work_message': bool,
-    'use_team_role_as_acl': bool,
-    'hedgedoc_url': str,
-    'ctftime_team': str,
+    "team_role": discord.Role,
+    "admin_role": discord.Role,
+    "ctfs_category": discord.CategoryChannel,
+    "incomplete_category": discord.CategoryChannel,
+    "complete_category": discord.CategoryChannel,
+    "archive_category": discord.CategoryChannel,
+    "ctf_archive_category": discord.CategoryChannel,
+    "export_channel": discord.TextChannel,
+    "enforce_categories": bool,
+    "send_work_message": bool,
+    "use_team_role_as_acl": bool,
+    "hedgedoc_url": str,
+    "ctftime_team": str,
 }
 
 class BotCommands(app_commands.Group):
@@ -66,9 +66,9 @@ class BotCommands(app_commands.Group):
                 raise app_commands.AppCommandError("Value must be a Channel ID")
             setattr(settings, key, int(value))
         elif typ == bool:
-            if value.strip().lower() in ('y', 'yes', 'true', 't', '1'):
+            if value.strip().lower() in ("y", "yes", "true", "t", "1"):
                 setattr(settings, key, True)
-            elif value.strip().lower() in ('n', 'no', 'false', 'f', '0'):
+            elif value.strip().lower() in ("n", "no", "false", "f", "0"):
                 setattr(settings, key, False)
             else:
                 raise app_commands.AppCommandError("Invalid boolean value. Please choose (y/n)")
@@ -100,8 +100,8 @@ class BotCommands(app_commands.Group):
                 value = interaction.guild.get_role(value).mention + f" ({value})"
             elif typ == discord.TextChannel:
                 value = interaction.guild.get_channel(value).mention + f" ({value})"
-            elif key == 'hedgedoc_url':
-                value = f'<{value}>'
+            elif key == "hedgedoc_url":
+                value = f"<{value}>"
 
             response += f"\n`{key}`: {value}"
 
