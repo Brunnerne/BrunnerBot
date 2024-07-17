@@ -403,16 +403,28 @@ class CtfCommands(app_commands.Group):
     @app_commands.command(description="Delete a CTF and its channels")
     @app_commands.guild_only
     @app_commands.check(is_team_admin)
-    async def delete(self, interaction: discord.Interaction, security: str | None):
-        ctf_db = await get_ctf_db(interaction, archived=None, allow_chall=False)
+    async def delete(
+        self,
+        interaction: discord.Interaction,
+        security: str | None,
+        force: bool | None = False
+    ):
         assert isinstance(interaction.channel, discord.TextChannel)
 
         if security is None:
             raise app_commands.AppCommandError(
                 f"Please supply the security parameter \"{interaction.channel.name}\""
             )
-        if security != interaction.channel.name:
-            raise app_commands.AppCommandError("Wrong security parameter")
+
+        if force:
+            ctf_db = Ctf.objects(name=security).first()
+            if ctf_db is None:
+                raise app_commands.AppCommandError(f"No CTF in DB with name {security}")
+        else:
+            ctf_db = await get_ctf_db(interaction, archived=None, allow_chall=False)
+            if security != interaction.channel.name:
+                raise app_commands.AppCommandError("Wrong security parameter")
+
         await interaction.response.defer()
 
         for chall in Challenge.objects(ctf=ctf_db):
@@ -425,9 +437,16 @@ class CtfCommands(app_commands.Group):
             await interaction.guild.get_role(ctf_db.role_id).delete(reason="Deleted CTF channels")
         except AttributeError:
             pass
-        await delete_channel(interaction.channel)
+
+        ctf_channel = interaction.guild.get_channel(ctf_db.channel_id)
+        await delete_channel(ctf_channel)
         Challenge.objects(ctf=ctf_db).delete()
         ctf_db.delete()
+
+        if interaction.channel != ctf_channel:
+            await interaction.edit_original_response(
+                content=f"CTF **{security}** deleted successfully"
+            )
 
 
 @app_commands.command(description="Invite a user to the CTF")
