@@ -280,6 +280,22 @@ class CtfCommands(app_commands.Group):
                     )
                     await submit_interaction.response.send_message("Updated info", ephemeral=True)
 
+                    # Send and pin message just with password for easy copy paste
+                    regex_password = re.search(r"Password: `(.+)`", self.edit.value)
+                    if not regex_password:
+                        return
+
+                    password = regex_password.group(1)
+                    if ctf_db.password_id is None:
+                        msg = await interaction.channel.send(password)
+                        await msg.pin()
+                        ctf_db.password_id = msg.id
+                        ctf_db.save()
+                    else:
+                        await interaction.channel.get_partial_message(ctf_db.password_id).edit(
+                            content=password
+                        )
+
             await interaction.response.send_modal(CredsModal())
             return
         elif field == "url":

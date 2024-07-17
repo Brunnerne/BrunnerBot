@@ -7,6 +7,7 @@ class Ctf(Document):
     role_id = LongField(required=True)
     info = DictField(required=False)
     info_id = LongField(required=True)
+    password_id = LongField(required=False)
     private = BooleanField(required=True)
     archived = BooleanField(required=True, default=False)
     meta = {
