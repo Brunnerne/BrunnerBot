@@ -77,38 +77,39 @@ class Ctftime(app_commands.Group):
 
     @staticmethod
     async def get_team_top10(team_url, year):
-        async with aiohttp.ClientSession() as session:
-            async with session.get(team_url) as response:
-                if response.status != 200:
-                    raise app_commands.AppCommandError("Unknown team")
+        async with aiohttp.ClientSession() as session, session.get(team_url) as response:
+            if response.status != 200:
+                raise app_commands.AppCommandError("Unknown team or server error")
 
-                html = await response.text()
-                soup = BeautifulSoup(html, 'html.parser')
-                team_name = soup.find(class_='page-header').text.strip()
+            html = await response.text()
+            soup = BeautifulSoup(html, 'html.parser')
+            team_name = soup.find(class_='page-header').text.strip()
 
-                year_rating = soup.find(id=f'rating_{year}')
-                if year_rating is None:
-                    raise app_commands.AppCommandError("Invalid year")
-                _, tbl = Ctftime.get_table_from_html(year_rating.find('table'))
+            year_rating = soup.find(id=f'rating_{year}')
+            if year_rating is None:
+                raise app_commands.AppCommandError("Invalid year for this team")
+            _, tbl = Ctftime.get_table_from_html(year_rating.find('table'))
 
-                h3_tag = soup.find('h3', text='Organized CTF events')
-                organized_tag = h3_tag.find_next_sibling('table') if h3_tag else None
+            h3_tag = soup.find('h3', text='Organized CTF events')
+            organized_tag = h3_tag.find_next_sibling('table') if h3_tag else None
 
-                if organized_tag:
-                    _, organized_tbl = Ctftime.get_table_from_html(organized_tag, raw=True)
-                    for name, weight in organized_tbl:
-                        event_id = name['href'].split("/")[-1]
+            if organized_tag:
+                _, organized_tbl = Ctftime.get_table_from_html(organized_tag, raw=True)
+                for name, weight in organized_tbl:
+                    event_id = name['href'].split("/")[-1]
 
-                        async with session.get(f'https://ctftime.org/api/v1/events/{event_id}/') as response:
-                            if response.status != 200:
-                                break
-                            resp = await response.json()
-                            if int(resp['finish'][:4]) != year:
-                                break
-                        tbl.append(['-', name.text, '-', str(float(weight.text)*2)])
-                tbl = sorted(tbl, key=lambda row: -float(row[3].replace('*','')))[:10]
-                s = sum(float(row[3].replace('*','')) for row in tbl)
-                return team_name, tbl, s
+                    async with session.get(
+                        f'https://ctftime.org/api/v1/events/{event_id}/'
+                    ) as response:
+                        if response.status != 200:
+                            break
+                        resp = await response.json()
+                        if int(resp['finish'][:4]) != year:
+                            break
+                    tbl.append(['-', name.text, '-', str(float(weight.text)*2)])
+            tbl = sorted(tbl, key=lambda row: -float(row[3].replace('*','')))[:10]
+            s = sum(float(row[3].replace('*','')) for row in tbl)
+            return team_name, tbl, s
 
 
     @app_commands.command(description="Display top teams for a specified year and/or country")
@@ -121,7 +122,9 @@ class Ctftime(app_commands.Group):
             raise app_commands.AppCommandError("Invalid country. Use the alpha-2 country code")
 
         async with aiohttp.ClientSession() as session:
-            async with session.get(f'https://ctftime.org/stats/{year}/{country.upper()}') as response:
+            async with session.get(
+                f'https://ctftime.org/stats/{year}/{country.upper()}'
+            ) as response:
                 if response.status != 200:
                     raise app_commands.AppCommandError("Unknown country")
 
@@ -136,7 +139,7 @@ class Ctftime(app_commands.Group):
         if country:
             out = f"**Showing top teams for {country_name}** :flag_{country.lower()}:"
         else:
-            out = f"**Showing top teams**"
+            out = "**Showing top teams**"
 
         if year != datetime.now().year:
             out += f' **({year})**'
@@ -162,15 +165,17 @@ class Ctftime(app_commands.Group):
 
         await interaction.response.defer()
 
-        team_name, tbl, s = await self.get_team_top10(url, year)
+        team_name, tbl, total_points = await self.get_team_top10(url, year)
 
-        tbl_str = tabulate(tbl, headers=['Place', 'Event', 'CTF points', 'Rating points'], floatfmt='.03f')
+        tbl_str = tabulate(
+            tbl,
+            headers=['Place', 'Event', 'CTF points', 'Rating points'],
+            floatfmt='.03f'
+        )
+        points = f"{total_points:.03f}".rjust(tbl_str.index("\n") - 5, " ")
 
-        out = f"**Showing top {len(tbl)} events for {team_name}**"
-        out += '\n```\n'
-        out += tbl_str
-        out += '\n\nTotal' + '{:.03f}'.format(s).rjust(tbl_str.index('\n')-5, ' ')
-        out += '\n```\n'
+        out = f"**Showing top {len(tbl)} events for {team_name}**\n"
+        out += f"```\n{tbl_str}\n\nTotal{points}```\n"
 
         if len(out) > 2000:
             await interaction.edit_original_response(content='Message is too long...')
@@ -178,7 +183,15 @@ class Ctftime(app_commands.Group):
         await interaction.edit_original_response(content=out)
 
     @app_commands.command(description="Calculate new CTFTime score from ctf")
-    async def calc(self, interaction: discord.Interaction, weight: float, best_points: float, team_points: float, team_place: int, team: str | None):
+    async def calc(
+        self,
+        interaction: discord.Interaction,
+        weight: float,
+        best_points: float,
+        team_points: float,
+        team_place: int,
+        team: str | None
+    ):
         new_score = (team_points/best_points + 1/team_place) * weight
 
         await interaction.response.send_message(f"Rating points: {new_score:.03f}")
@@ -197,7 +210,10 @@ class Ctftime(app_commands.Group):
         new_rating = old_rating + max(new_score-old_score, 0)
         score_diff = new_rating-old_rating
 
-        await interaction.edit_original_response(content=f'Rating points: {new_score:.03f}\nNew Rating for {team_name}: {new_rating:.03f} (+{score_diff:.03f})')
+        await interaction.edit_original_response(
+            content=f'Rating points: {new_score:.03f}\n'
+            f'New Rating for {team_name}: {new_rating:.03f} (+{score_diff:.03f})'
+        )
 
 
 def add_commands(tree: app_commands.CommandTree, guild: discord.Object | None):

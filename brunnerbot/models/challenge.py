@@ -1,5 +1,14 @@
-from mongoengine import Document, StringField, IntField, BooleanField, ListField, ReferenceField, LongField, MapField, \
-    EmbeddedDocumentListField, EmbeddedDocument
+from mongoengine import (
+    Document,
+    StringField,
+    IntField,
+    BooleanField,
+    ListField,
+    ReferenceField,
+    LongField,
+    EmbeddedDocumentListField,
+    EmbeddedDocument
+)
 from brunnerbot.models.ctf import Ctf
 
 

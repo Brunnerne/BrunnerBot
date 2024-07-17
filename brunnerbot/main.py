@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import sys
 
 import discord
 import pymongo.errors
@@ -13,16 +14,15 @@ from brunnerbot.utils import setup_settings
 logging.basicConfig(level=logging.INFO)
 
 intents = discord.Intents.all()
-
 client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
 
-guild_obj = discord.Object(id=config.guild_id) if config.guild_id else None
-challenge.add_commands(tree, guild_obj)
-ctf.add_commands(tree, guild_obj)
-ctftime.add_commands(tree, guild_obj)
-notes.add_commands(tree, guild_obj)
-bot.add_commands(tree, guild_obj)
+GUILD_OBJ = discord.Object(id=config.guild_id) if config.guild_id else None
+challenge.add_commands(tree, GUILD_OBJ)
+ctf.add_commands(tree, GUILD_OBJ)
+ctftime.add_commands(tree, GUILD_OBJ)
+notes.add_commands(tree, GUILD_OBJ)
+bot.add_commands(tree, GUILD_OBJ)
 
 
 @client.event
@@ -38,37 +38,44 @@ async def on_ready():
         db.command("ping")
     except pymongo.errors.ServerSelectionTimeoutError:
         logging.critical("Could not connect to MongoDB")
-        exit(1)
+        sys.exit(1)
+
     if config.guild_id:
         guild = client.get_guild(config.guild_id)
         if guild:
             await setup_settings(guild)
-            await tree.sync(guild=guild_obj)
+            await tree.sync(guild=GUILD_OBJ)
     else:
         for guild in client.guilds:
             await setup_settings(guild)
-        await tree.sync(guild=guild_obj)
-    logging.info(f"{client.user.name} Online")
+        await tree.sync(guild=GUILD_OBJ)
+    logging.info("%s is online", client.user.name)
 
 
 @client.event
 async def on_guild_join(guild: discord.Guild):
     if config.guild_id is None or config.guild_id == guild.id:
-        logging.info(f"{client.user.name} has joined guild \"{guild.name}\"")
+        logging.info("%s has joined guild \"%s\"", client.user.name, guild.name)
         await setup_settings(guild)
         if config.guild_id:
-            await tree.sync(guild=guild_obj)
+            await tree.sync(guild=GUILD_OBJ)
 
 
 @tree.error
-async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+async def on_app_command_error(
+    interaction: discord.Interaction,
+    error: app_commands.AppCommandError
+):
     try:
         raise error
     except app_commands.CommandInvokeError as e:
         try:
             raise e.original
         except AssertionError:
-            await interaction.response.send_message("An assertion failed when running this command", ephemeral=True)
+            await interaction.response.send_message(
+                "An assertion failed when running this command",
+                ephemeral=True
+            )
     except app_commands.AppCommandError:
         if error.args:
             if interaction.response.is_done():

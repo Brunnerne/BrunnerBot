@@ -43,7 +43,9 @@ SETTINGS_TYPES = {
 class BotCommands(app_commands.Group):
     @app_commands.command(description="Update guild settings")
     @app_commands.guild_only
-    @app_commands.choices(key=[app_commands.Choice(name=name, value=name) for name in SETTINGS_TYPES.keys()])
+    @app_commands.choices(key=[
+        app_commands.Choice(name=name, value=name) for name in SETTINGS_TYPES
+    ])
     @app_commands.check(is_team_admin)
     async def set(self, interaction: discord.Interaction, key: str, value: str):
         settings = get_settings(interaction.guild)
@@ -77,8 +79,8 @@ class BotCommands(app_commands.Group):
 
         try:
             settings.save()
-        except ValidationError:
-            raise app_commands.AppCommandError("Invalid value")
+        except ValidationError as exc:
+            raise app_commands.AppCommandError("Invalid value") from exc
 
         await interaction.response.send_message("Setting updated", ephemeral=True)
 

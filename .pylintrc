@@ -1,0 +1,12 @@
+[MESSAGES CONTROL]
+
+disable=
+    arguments-differ,  # Incorrectly marked for Modal methods
+    missing-module-docstring,  # No docstrings for now
+    missing-function-docstring,
+    missing-class-docstring,
+    no-member,  # Most classes in Discord bots have no explicit members
+    too-few-public-methods,  # Don't care
+    too-many-locals,  # Code smells, wontfix
+    too-many-branches,
+    too-many-arguments,

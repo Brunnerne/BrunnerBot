@@ -9,7 +9,22 @@ from dateutil import parser
 from discord import app_commands
 from discord import ui
 
-from brunnerbot.utils import *
+from brunnerbot.utils import (
+    is_team_admin,
+    create_channel,
+    move_channel,
+    delete_channel,
+    get_archive_category,
+    get_ctf_archive_category,
+    get_ctfs_category,
+    get_complete_category,
+    get_incomplete_category,
+    get_export_channel,
+    get_team_role,
+    get_settings,
+    sanitize_channel_name,
+    MAX_CHANNELS
+)
 from brunnerbot.modules.ctftime import Ctftime
 from brunnerbot.config import config
 
@@ -17,7 +32,11 @@ from brunnerbot.models.challenge import Challenge
 from brunnerbot.models.ctf import Ctf
 
 
-async def get_ctf_db(interaction: discord.Interaction, archived: bool | None = False, allow_chall: bool = True) -> Ctf:
+async def get_ctf_db(
+    interaction: discord.Interaction,
+    archived: bool | None = False,
+    allow_chall: bool = True
+) -> Ctf:
     ctf_db: Ctf = Ctf.objects(channel_id=interaction.channel_id).first()
     if ctf_db is None:
         chall_db: Challenge = Challenge.objects(channel_id=interaction.channel_id).first()
@@ -32,9 +51,6 @@ async def get_ctf_db(interaction: discord.Interaction, archived: bool | None = F
 
 
 def user_to_dict(user: discord.Member | discord.User):
-    """
-    Based on https://github.com/ekofiskctf/fiskebot/blob/eb774b7/bot/ctf_model.py#L156
-    """
     return {
         "id": user.id,
         "nick": user.nick if isinstance(user, discord.Member) else None,
@@ -45,10 +61,6 @@ def user_to_dict(user: discord.Member | discord.User):
 
 
 async def export_channels(channels: list[discord.TextChannel]):
-    """
-    Based on https://github.com/ekofiskctf/fiskebot/blob/eb774b7/bot/ctf_model.py#L778
-    """
-    # TODO: Backup attachments, since discord deletes these when messages are deleted
     ctf_export = {"channels": []}
     for channel in channels:
         chan = {
@@ -64,7 +76,10 @@ async def export_channels(channels: list[discord.TextChannel]):
                 "created_at": message.created_at.isoformat(),
                 "content": message.clean_content,
                 "author": user_to_dict(message.author),
-                "attachments": [{"filename": a.filename, "url": str(a.url)} for a in message.attachments],
+                "attachments": [
+                    {"filename": a.filename, "url": str(a.url)}
+                    for a in message.attachments
+                ],
                 "channel": {
                     "name": message.channel.name
                 },
@@ -75,12 +90,18 @@ async def export_channels(channels: list[discord.TextChannel]):
                 ),
                 "embeds": [e.to_dict() for e in message.embeds],
                 "mentions": [user_to_dict(mention) for mention in message.mentions],
-                "channel_mentions": [{"id": c.id, "name": c.name} for c in message.channel_mentions],
+                "channel_mentions": [
+                    {"id": c.id, "name": c.name}
+                    for c in message.channel_mentions
+                ],
                 "mention_everyone": message.mention_everyone,
                 "reactions": [
                     {
                         "count": r.count,
-                        "emoji": r.emoji if isinstance(r.emoji, str) else {"name": r.emoji.name, "url": r.emoji.url},
+                        "emoji": r.emoji if isinstance(r.emoji, str) else {
+                            "name": r.emoji.name,
+                            "url": r.emoji.url
+                        },
                     } for r in message.reactions
                 ]
             }
@@ -108,7 +129,13 @@ class CtfCommands(app_commands.Group):
     @app_commands.command(description="Create a new CTF event")
     @app_commands.guild_only
     @app_commands.check(is_team_admin)
-    async def create(self, interaction: discord.Interaction, name: str, ctftime: str | None, private: bool = False):
+    async def create(
+        self,
+        interaction: discord.Interaction,
+        name: str,
+        ctftime: str | None,
+        private: bool = False
+    ):
         if len(interaction.guild.channels) >= MAX_CHANNELS - 3:
             raise app_commands.AppCommandError("There are too many channels on this discord server")
         name = sanitize_channel_name(name)
@@ -123,7 +150,8 @@ class CtfCommands(app_commands.Group):
             new_role: discord.PermissionOverwrite(view_channel=True)
         }
         if not private and settings.use_team_role_as_acl:
-            overwrites[get_team_role(interaction.guild)] = discord.PermissionOverwrite(view_channel=True)
+            team_role = get_team_role(interaction.guild)
+            overwrites[team_role] = discord.PermissionOverwrite(view_channel=True)
         if private:
             await interaction.user.add_roles(new_role)
 
@@ -142,7 +170,14 @@ class CtfCommands(app_commands.Group):
 
         await info_msg.pin()
 
-        ctf_db = Ctf(name=name, channel_id=new_channel.id, role_id=new_role.id, info=info, info_id=info_msg.id, private=private)
+        ctf_db = Ctf(
+            name=name,
+            channel_id=new_channel.id,
+            role_id=new_role.id,
+            info=info,
+            info_id=info_msg.id,
+            private=private
+        )
         ctf_db.save()
 
         await interaction.edit_original_response(content=f"Created ctf {new_channel.mention}")
@@ -170,7 +205,7 @@ class CtfCommands(app_commands.Group):
         info = ctf_db.info or {}
         if field == "title":
             info[field] = value.replace("\n", "")
-        elif field == "start" or field == "end":
+        elif field in ("start", "end"):
             if value.isdigit():
                 t = int(value)
             else:
@@ -178,7 +213,7 @@ class CtfCommands(app_commands.Group):
                     t = int(parser.parse(value).timestamp())
                 except parser.ParserError as exc:
                     raise app_commands.AppCommandError(
-                        "Invalid time, please use any standard time format"
+                        'Invalid time, please use any standard time format'
                     ) from exc
 
             info[field] = t
@@ -188,37 +223,45 @@ class CtfCommands(app_commands.Group):
             original = f"Name: `{username}`\nPassword: `{password}`"
 
             class CredsModal(ui.Modal, title='Edit Credentials'):
-                edit = ui.TextInput(label='Edit', style=discord.TextStyle.paragraph, default=original, max_length=1000)
+                edit = ui.TextInput(
+                    label='Edit',
+                    style=discord.TextStyle.paragraph,
+                    default=original,
+                    max_length=1000
+                )
 
                 async def on_submit(self, submit_interaction: discord.Interaction):
                     info["creds"] = self.edit.value
                     ctf_db.info = info
                     ctf_db.save()
-                    await interaction.channel.get_partial_message(ctf_db.info_id).edit(content=create_info_message(info))
+                    await interaction.channel.get_partial_message(ctf_db.info_id).edit(
+                        content=create_info_message(info)
+                    )
                     await submit_interaction.response.send_message("Updated info", ephemeral=True)
 
             await interaction.response.send_modal(CredsModal())
             return
         elif field == "url":
-            if re.search(r'^https?://', value):
-                info["url"] = value
-            else:
+            if not re.search(r'^https?://', value):
                 raise app_commands.AppCommandError("Invalid url")
+            info["url"] = value
         elif field == "ctftime":
             regex_ctftime = re.search(r'^(?:https?://ctftime.org/event/)?(\d+)/?$', value)
-            if regex_ctftime:
-                info['ctftime_id'] = int(regex_ctftime.group(1))
-                ctf_info = await Ctftime.get_ctf_info(info['ctftime_id'])
-                for key, value in ctf_info.items():
-                    info[key] = value
-            else:
+            if not regex_ctftime:
                 raise app_commands.AppCommandError("Invalid ctftime link")
+
+            info['ctftime_id'] = int(regex_ctftime.group(1))
+            ctf_info = await Ctftime.get_ctf_info(info['ctftime_id'])
+            for key, val in ctf_info.items():
+                info[key] = val
         else:
             raise app_commands.AppCommandError("Invalid field")
 
         ctf_db.info = info
         ctf_db.save()
-        await interaction.channel.get_partial_message(ctf_db.info_id).edit(content=create_info_message(info))
+        await interaction.channel.get_partial_message(ctf_db.info_id).edit(
+            content=create_info_message(info)
+        )
         await interaction.response.send_message("Updated info", ephemeral=True)
 
     @app_commands.command(description="Archive a CTF")
@@ -237,7 +280,11 @@ class CtfCommands(app_commands.Group):
             else:
                 chall.delete()
 
-        await move_channel(interaction.channel, get_ctf_archive_category(interaction.guild), challenge=False)
+        await move_channel(
+            interaction.channel,
+            get_ctf_archive_category(interaction.guild),
+            challenge=False
+        )
         ctf_db.archived = True
         ctf_db.save()
         await interaction.edit_original_response(content="The CTF has been archived")
@@ -253,13 +300,20 @@ class CtfCommands(app_commands.Group):
 
         for chall in Challenge.objects(ctf=ctf_db):
             channel = interaction.guild.get_channel(chall.channel_id)
-            target_category = get_complete_category(interaction.guild) if chall.solved else get_incomplete_category(interaction.guild)
+            if chall.solved:
+                target_category = get_complete_category(interaction.guild)
+            else:
+                target_category = get_incomplete_category(interaction.guild)
             if channel:
                 await move_channel(channel, target_category)
             else:
                 chall.delete()
 
-        await move_channel(interaction.channel, get_ctfs_category(interaction.guild), challenge=False)
+        await move_channel(
+            interaction.channel,
+            get_ctfs_category(interaction.guild),
+            challenge=False
+        )
         ctf_db.archived = False
         ctf_db.save()
         await interaction.edit_original_response(content="The CTF has been unarchived")
@@ -318,16 +372,18 @@ class CtfCommands(app_commands.Group):
 
         filepath = export_dir / f"{interaction.channel_id}_{ctf_db.name}.json"
         try:
-            with open(filepath, 'w') as f:
+            with open(filepath, 'w', encoding="utf8") as f:
                 f.write(json.dumps(ctf_export, separators=(",", ":")))
         except FileNotFoundError:
             # Export dir was not created
-            await interaction.edit_original_response(content=f"Invalid file permissions when exporting CTF")
+            await interaction.edit_original_response(
+                content="Invalid file permissions when exporting CTF"
+            )
             return
 
         export_channel = get_export_channel(interaction.guild)
         await export_channel.send(files=[discord.File(filepath, filename=f"{ctf_db.name}.json")])
-        await interaction.edit_original_response(content=f"The CTF has been exported")
+        await interaction.edit_original_response(content="The CTF has been exported")
 
     @app_commands.command(description="Delete a CTF and its channels")
     @app_commands.guild_only
@@ -337,8 +393,10 @@ class CtfCommands(app_commands.Group):
         assert isinstance(interaction.channel, discord.TextChannel)
 
         if security is None:
-            raise app_commands.AppCommandError("Please supply the security parameter \"{}\"".format(interaction.channel.name))
-        elif security != interaction.channel.name:
+            raise app_commands.AppCommandError(
+                f"Please supply the security parameter \"{interaction.channel.name}\""
+            )
+        if security != interaction.channel.name:
             raise app_commands.AppCommandError("Wrong security parameter")
         await interaction.response.defer()
 
@@ -363,8 +421,11 @@ async def invite(interaction: discord.Interaction, user: discord.Member):
     ctf_db = await get_ctf_db(interaction)
     assert isinstance(interaction.channel, discord.TextChannel)
 
-    await user.add_roles(interaction.guild.get_role(ctf_db.role_id), reason=f"Invited by {interaction.user.name}")
-    await interaction.response.send_message("Invited user {}".format(user.mention))
+    await user.add_roles(
+        interaction.guild.get_role(ctf_db.role_id),
+        reason=f"Invited by {interaction.user.name}"
+    )
+    await interaction.response.send_message(f"Invited user {user.mention}")
 
 
 @app_commands.command(description="Leave a CTF")
