@@ -15,7 +15,7 @@ BrunnerBot adds a number of slash commands for easy and effective CTF management
     * `/invite <user>`: Add a new player
     * `/remove <user>`: Remove a current player - players can leave manually with `/leave`
   * When a CTFtime link is supplied, most CTF information is automatically entered
-    * Manually update info such as team credentials with `/ctf update <field> <value>`
+    * Manually update info such as team credentials and Discord link with `/ctf update <field> <value>`
   * When `private` is set, team members are not automatically added to the CTF and must all be invited with `/invite`
   * `/ctf rename <name>`: Rename CTF if needed - very short names recommended to fit in channel list
 * `/add <category> <name>`: Create new challenge (description is entered in popup modal)

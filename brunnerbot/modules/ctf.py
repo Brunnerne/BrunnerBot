@@ -112,16 +112,24 @@ async def export_channels(channels: list[discord.TextChannel]):
 
 def create_info_message(info):
     msg = f"## {discord.utils.escape_mentions(info['title'])}"
+
     if "start" in info or "end" in info:
         msg += "\n"
     if "start" in info:
         msg += f"\n**START:** <t:{info['start']}:R> <t:{info['start']}>"
     if "end" in info:
         msg += f"\n**END:** <t:{info['end']}:R> <t:{info['end']}>"
+
+    if "url" in info or "discord" in info:
+        msg += "\n"
     if "url" in info:
-        msg += f"\n\nCTF Link: {info['url']}"
+        msg += f"\nCTF Link: {info['url']}"
+    if "discord" in info:
+        msg += f"\nDiscord: {info['discord']}"
+
     if "creds" in info:
         msg += f"\n\n### CREDENTIALS\n\n{discord.utils.escape_mentions(info['creds'])}"
+
     return msg
 
 
@@ -193,6 +201,7 @@ class CtfCommands(app_commands.Group):
         app_commands.Choice(name="start", value="start"),
         app_commands.Choice(name="end", value="end"),
         app_commands.Choice(name="url", value="url"),
+        app_commands.Choice(name="discord", value="discord"),
         app_commands.Choice(name="creds", value="creds"),
         app_commands.Choice(name="ctftime", value="ctftime")
     ])
@@ -243,12 +252,18 @@ class CtfCommands(app_commands.Group):
             return
         elif field == "url":
             if not re.search(r"^https?://", value):
-                raise app_commands.AppCommandError("Invalid url")
+                raise app_commands.AppCommandError("Invalid URL")
             info["url"] = value
+        elif field == "discord":
+            regex_discord = re.search(r"^(?:https?://)?discord\.\w{2,3}/(?:invite/)?(\w+)/?$", value)
+            if not regex_discord:
+                raise app_commands.AppCommandError("Invalid Discord URL")
+
+            info["discord"] = f"https://discord.gg/{regex_discord.group(1)}"
         elif field == "ctftime":
             regex_ctftime = re.search(r"^(?:https?://ctftime.org/event/)?(\d+)/?$", value)
             if not regex_ctftime:
-                raise app_commands.AppCommandError("Invalid ctftime link")
+                raise app_commands.AppCommandError("Invalid CTFtime link")
 
             info["ctftime_id"] = int(regex_ctftime.group(1))
             ctf_info = await Ctftime.get_ctf_info(info["ctftime_id"])
