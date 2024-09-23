@@ -18,6 +18,7 @@ from brunnerbot.utils import (
     get_complete_category,
     get_admin_role,
     sanitize_channel_name,
+    sanitize_discord_message,
     get_settings,
     MAX_CHANNELS
 )
@@ -202,7 +203,11 @@ async def add(interaction: discord.Interaction, category: str, name: str):
                 interaction.channel.overwrites,
                 incomplete_category
             )
-            await new_channel.send(f"# {self.name_field.value}\n\n{self.description_field.value}")
+            
+            chal_title = sanitize_discord_message(self.name_field.value)
+            chal_description = sanitize_discord_message(self.description_field.value)
+            
+            await new_channel.send(f"# {chal_title}\n\n{chal_description}")
 
             work_message_id = None
             if settings.send_work_message:
