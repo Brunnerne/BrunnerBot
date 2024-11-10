@@ -9,6 +9,7 @@ from brunnerbot.models.guild_settings import GuildSettings
 MAX_CHANNELS = 500
 CATEGORY_MAX_CHANNELS = 50
 
+
 def get_category_pos(category_channel: discord.CategoryChannel, name: str) -> int:
     if name.count("-") == 1:
         ctf, category = name.split("-")[0], None
@@ -124,11 +125,6 @@ def sanitize_channel_name(name: str) -> str:
     name = name.translate(_channel_name_translation).lower()
     return re.sub(r"_+", "_", name).strip("_")
 
-def sanitize_discord_message(message: str):
-    stripped = message.strip()
-    non_mentioned = stripped.replace('@everyone', '@\u200beveryone').replace('@here', '@\u200bhere')
-    escaped = discord.utils.escape_mentions(non_mentioned)
-    return escaped
 
 def _discord_get(
         guild: discord.Guild,
