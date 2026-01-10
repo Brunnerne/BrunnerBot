@@ -301,7 +301,7 @@ async def done(interaction: discord.Interaction, contributors: str | None):
         if emoji is None:
             emoji = discord.utils.get(interaction.guild.emojis, name=default_reaction_emoji)
         await sent_msg.add_reaction(emoji)
-    except TypeError as a:
+    except TypeError:
         await sent_msg.add_reaction("🎉")
         await interaction.response.send_message("Challenge moved to done! (failed to add custom emoji)")
         return
