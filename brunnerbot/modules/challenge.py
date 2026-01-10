@@ -251,6 +251,8 @@ async def done(interaction: discord.Interaction, contributors: str | None):
     chall_db, ctf_db = await check_challenge(interaction)
     assert isinstance(interaction.channel, discord.TextChannel)
 
+    await interaction.response.defer()
+
     users = chall_db.solvers
     if interaction.user.id not in users:
         users.append(interaction.user.id)
@@ -283,6 +285,7 @@ async def done(interaction: discord.Interaction, contributors: str | None):
     }
     msg_emojis = ("🎉", "🎉")
     reaction_emoji = "peepoBrunner"
+    default_reaction_emoji = reaction_emoji
 
     if len(users) == 1 and users[0] in emojis:
         msg_emojis, reaction_emoji = emojis[users[0]]
@@ -295,10 +298,17 @@ async def done(interaction: discord.Interaction, contributors: str | None):
     sent_msg = await interaction.guild.get_channel(ctf_db.channel_id).send(msg)
 
     # Pre-react to solver message
-    emoji = discord.utils.get(interaction.guild.emojis, name=reaction_emoji)
-    await sent_msg.add_reaction(emoji)
+    try:
+        emoji = discord.utils.get(interaction.guild.emojis, name=reaction_emoji)
+        if emoji is None:
+            emoji = discord.utils.get(interaction.guild.emojis, name=default_reaction_emoji)
+        await sent_msg.add_reaction(emoji)
+    except TypeError:
+        await sent_msg.add_reaction("🎉")
+        await interaction.followup.send("Challenge moved to done! (failed to add custom emoji)")
+        return
 
-    await interaction.response.send_message("Challenge moved to done!")
+    await interaction.followup.send("Challenge moved to done!")
 
 
 @app_commands.command(description="Marks a challenge as undone")
