@@ -251,6 +251,8 @@ async def done(interaction: discord.Interaction, contributors: str | None):
     chall_db, ctf_db = await check_challenge(interaction)
     assert isinstance(interaction.channel, discord.TextChannel)
 
+    await interaction.response.defer()
+
     users = chall_db.solvers
     if interaction.user.id not in users:
         users.append(interaction.user.id)
@@ -303,10 +305,10 @@ async def done(interaction: discord.Interaction, contributors: str | None):
         await sent_msg.add_reaction(emoji)
     except TypeError:
         await sent_msg.add_reaction("🎉")
-        await interaction.response.send_message("Challenge moved to done! (failed to add custom emoji)")
+        await interaction.followup.send("Challenge moved to done! (failed to add custom emoji)")
         return
 
-    await interaction.response.send_message("Challenge moved to done!")
+    await interaction.followup.send("Challenge moved to done!")
 
 
 @app_commands.command(description="Marks a challenge as undone")
