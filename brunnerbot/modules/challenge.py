@@ -317,6 +317,8 @@ async def undone(interaction: discord.Interaction):
     chall_db, _ = await check_challenge(interaction)
     assert isinstance(interaction.channel, discord.TextChannel)
 
+    await interaction.response.defer()
+
     if not chall_db.solved:
         raise app_commands.AppCommandError("This challenge is not done yet!")
 
@@ -325,7 +327,7 @@ async def undone(interaction: discord.Interaction):
     chall_db.save()
 
     await move_channel(interaction.channel, get_incomplete_category(interaction.guild))
-    await interaction.response.send_message("Reopened challenge as not done")
+    await interaction.followup.send("Reopened challenge as not done")
 
 
 class CategoryCommands(app_commands.Group):
