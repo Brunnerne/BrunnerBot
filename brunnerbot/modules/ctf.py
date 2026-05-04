@@ -1,8 +1,11 @@
 import json
+import logging
 import re
 
 from pathlib import Path
+from urllib.parse import urlencode
 
+import aiohttp
 import discord
 
 from dateutil import parser
@@ -110,6 +113,39 @@ async def export_channels(channels: list[discord.TextChannel]):
             chan["messages"].append(entry)
         ctf_export["channels"].append(chan)
     return ctf_export
+
+
+async def upload_to_explorer(ctf_db: Ctf, payload: dict) -> str | None:
+    """POST the export to ctf-chat-explorer. Returns an error string or None on success.
+    No-ops if EXPLORER_URL or EXPLORER_TOKEN is unset."""
+    if not config.explorer_url or not config.explorer_token:
+        return None
+
+    info = ctf_db.info or {}
+    params = {"name": ctf_db.name}
+    if "ctftime_id" in info:
+        params["ctftime_id"] = info["ctftime_id"]
+    if "start" in info:
+        params["started_at"] = int(info["start"])
+    if "end" in info:
+        params["ended_at"] = int(info["end"])
+
+    url = config.explorer_url.rstrip("/") + "/api/ctf/import?" + urlencode(params)
+    headers = {
+        "Authorization": f"Bearer {config.explorer_token}",
+        "Content-Type": "application/json",
+    }
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, data=json.dumps(payload), headers=headers) as resp:
+                if resp.status >= 300:
+                    body = await resp.text()
+                    logging.error("Explorer import failed: %s %s", resp.status, body[:500])
+                    return f"explorer returned HTTP {resp.status}"
+    except aiohttp.ClientError as exc:
+        logging.exception("Explorer import request failed")
+        return str(exc)
+    return None
 
 
 def create_info_message(info):
@@ -462,7 +498,14 @@ class CtfCommands(app_commands.Group):
 
         export_channel = get_export_channel(interaction.guild)
         await export_channel.send(files=[discord.File(filepath, filename=f"{ctf_db.name}.json")])
-        await interaction.edit_original_response(content="The CTF has been exported")
+
+        upload_err = await upload_to_explorer(ctf_db, ctf_export)
+        if upload_err:
+            await interaction.edit_original_response(
+                content=f"The CTF has been exported (explorer upload failed: {upload_err})"
+            )
+        else:
+            await interaction.edit_original_response(content="The CTF has been exported")
 
     @app_commands.command(description="Delete a CTF and its channels")
     @app_commands.guild_only

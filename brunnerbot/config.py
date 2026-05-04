@@ -35,5 +35,10 @@ class Config:
         self.mongodb_db = parse_variable("MONGODB_DB", str, default="brunnerbot")
         self.backups_dir = parse_variable("BACKUPS_DIR", str, default=BACKUPS_DIR_DEFAULT)
 
+        # Optional: forward CTF exports to a ctf-chat-explorer instance.
+        # If either is unset, the export still runs locally but no upload is attempted.
+        self.explorer_url = parse_variable("EXPLORER_URL", str)
+        self.explorer_token = parse_variable("EXPLORER_TOKEN", str)
+
 
 config = Config()
